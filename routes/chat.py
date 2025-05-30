@@ -7,11 +7,11 @@ import asyncio
 from datetime import datetime
 
 # Import database utilities
-from misc.db import create_conversation, add_message, get_conversation
+from migrations.db.db_factory import create_conversation, add_message, get_conversation
 from llm_service_providers.index import llm_service
 
 # Import models
-from models.chat import ChatRequest, ChatStreamResponse
+from schema.chat import ChatRequest, ChatStreamResponse
 
 router = APIRouter()
 

@@ -16,7 +16,7 @@ ENV/
 
 # IDE specific files
 .idea/
-.vscode/
+# .vscode/ - Keeping Azure Functions configuration
 *.swp
 *.swo
 

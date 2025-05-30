@@ -14,7 +14,7 @@ import argparse
 # Add the parent directory to the path so we can import our modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from misc.db_wrapper import DatabaseWrapper
+from migrations.db.db_wrapper import DatabaseWrapper
 
 
 def migrate_database(db_type=None):

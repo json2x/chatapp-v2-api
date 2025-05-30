@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from typing import List, Dict, Any, Optional
-from misc.db import get_all_conversations, get_conversation, delete_conversation
-from models.conversations import Conversation, ConversationSummary, DeleteResponse
+from migrations.db.db_factory import get_all_conversations, get_conversation, delete_conversation
+from schema.conversations import Conversation, ConversationSummary, DeleteResponse
 
 router = APIRouter()
 

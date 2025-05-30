@@ -3,9 +3,28 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from typing import List, Dict, Any, Optional
 import os
+import logging
+from dotenv import load_dotenv
 
-# Import database utilities
-from misc.db import init_db, get_all_conversations, get_conversation, create_conversation, add_message, delete_conversation
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("chatapp-v2-api")
+
+# Load environment variables
+load_dotenv()
+
+# Import database wrapper
+from migrations.db.db_wrapper import init_db, db_wrapper, DatabaseWrapper
+
+# Import database operations from factory
+from migrations.db.db_factory import (
+    get_db_type,
+    create_conversation,
+    add_message,
+    get_conversation,
+    get_all_conversations,
+    delete_conversation
+)
 
 # Import LLM service wrapper
 from llm_service_providers.index import llm_service
@@ -20,11 +39,17 @@ from routes.conversations import router as conversations_router
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: Initialize database
-    init_db()
-    print("Database initialized successfully")
+    try:
+        # Use the global db_wrapper instance that was already configured
+        init_db()
+        logger.info("Database initialized successfully")
+    except Exception as e:
+        logger.error(f"Error initializing database: {e}")
+        logger.warning("Application will continue but database functionality may be limited")
+    
     yield
     # Shutdown: Clean up resources if needed
-    print("Shutting down application")
+    logger.info("Shutting down application")
 
 # Create FastAPI app with lifespan
 app = FastAPI(

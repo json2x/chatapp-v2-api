@@ -13,17 +13,17 @@ logger = logging.getLogger("chatapp-v2-api")
 # Load environment variables
 load_dotenv()
 
-# Import database wrapper
-from migrations.db.db_wrapper import init_db, db_wrapper, DatabaseWrapper
-
-# Import database operations from factory
-from migrations.db.db_factory import (
-    get_db_type,
+# Import database functionality
+from database.database import init_db, get_db
+from database.crud import (
     create_conversation,
     add_message,
     get_conversation,
     get_all_conversations,
-    delete_conversation
+    delete_conversation,
+    get_messages_by_conversation,
+    get_message_history,
+    update_conversation
 )
 
 # Import LLM service wrapper
@@ -40,7 +40,7 @@ from routes.conversations import router as conversations_router
 async def lifespan(app: FastAPI):
     # Startup: Initialize database
     try:
-        # Use the global db_wrapper instance that was already configured
+        # Initialize the SQLAlchemy database
         init_db()
         logger.info("Database initialized successfully")
     except Exception as e:

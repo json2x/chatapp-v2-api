@@ -1,13 +1,13 @@
-from fastapi import APIRouter, Request, Response, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import StreamingResponse
-from typing import Optional, Dict, Any, List, Generator
-import uuid
+from typing import Dict, List, Generator
 import json
 import asyncio
-from datetime import datetime
+from sqlalchemy.orm import Session
 
 # Import database utilities
-from migrations.db.db_factory import create_conversation, add_message, get_conversation
+from database.database import get_db
+from database.crud import create_conversation, add_message, get_message_history
 from llm_service_providers.index import llm_service
 
 # Import models
@@ -18,7 +18,8 @@ router = APIRouter()
 async def stream_generator(
     model: str,
     messages: List[Dict[str, str]],
-    conversation_id: str
+    conversation_id: str,
+    db: Session
 ) -> Generator[str, None, None]:
     """
     Generate a stream of SSE events from the chat completion.
@@ -74,6 +75,7 @@ async def stream_generator(
         
         # Save the assistant's response to the database
         add_message(
+            db=db,
             conversation_id=conversation_id,
             role="assistant",
             content=full_content,
@@ -91,7 +93,7 @@ async def stream_generator(
 
 
 @router.post("/chat")
-async def chat(request: ChatRequest) -> StreamingResponse:
+async def chat(request: ChatRequest, db: Session = Depends(get_db)) -> StreamingResponse:
     """
     Chat endpoint that streams responses from the LLM.
     
@@ -128,27 +130,35 @@ async def chat(request: ChatRequest) -> StreamingResponse:
         title = user_message[:50] + "..." if len(user_message) > 50 else user_message
         
         # Create a new conversation
-        conversation_id = create_conversation(
+        conversation = create_conversation(
+            db=db,
             title=title,
             model=model,
             system_prompt=system_prompt
         )
+        # Handle both dictionary and model objects
+        if isinstance(conversation, dict):
+            conversation_id = conversation['id']
+        else:
+            conversation_id = conversation.id
     
     # Add the user message to the conversation
     add_message(
+        db=db,
         conversation_id=conversation_id,
         role="user",
         content=user_message
     )
     
     # Get the conversation history
-    messages = llm_service.get_message_history(
+    messages = get_message_history(
+        db=db,
         conversation_id=conversation_id,
         summarize=summarize_history
     )
     
     # Create the streaming response
     return StreamingResponse(
-        stream_generator(model, messages, conversation_id),
+        stream_generator(model, messages, conversation_id, db),
         media_type="text/event-stream"
     )

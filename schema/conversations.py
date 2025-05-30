@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Dict, Optional, Any
 from datetime import datetime
 
@@ -14,8 +14,7 @@ class Message(BaseModel):
     model: Optional[str] = None
     metadata: Optional[Dict[str, Any]] = None
 
-    class Config:
-        from_attributes = True  # For compatibility with SQLAlchemy ORM models
+    model_config = ConfigDict(from_attributes=True)  # For compatibility with SQLAlchemy ORM models
 
 
 class MessageCreate(BaseModel):
@@ -51,8 +50,7 @@ class Conversation(ConversationBase):
     messages: List[Message] = []
     message_count: Optional[int] = None
 
-    class Config:
-        from_attributes = True  # For compatibility with SQLAlchemy ORM models
+    model_config = ConfigDict(from_attributes=True)  # For compatibility with SQLAlchemy ORM models
 
 
 class ConversationSummary(BaseModel):
@@ -69,8 +67,7 @@ class ConversationSummary(BaseModel):
     message_count: int
     metadata: Optional[Dict[str, Any]] = None
 
-    class Config:
-        from_attributes = True  # For compatibility with SQLAlchemy ORM models
+    model_config = ConfigDict(from_attributes=True)  # For compatibility with SQLAlchemy ORM models
 
 
 class DeleteResponse(BaseModel):

@@ -7,21 +7,27 @@ supporting both PostgreSQL for production and SQLite for local development.
 
 import os
 import logging
-from sqlalchemy import create_engine, MetaData
+import urllib.parse
+from sqlalchemy import create_engine, MetaData        
+import sqlalchemy as sa
 from sqlalchemy.orm import sessionmaker, scoped_session, declarative_base
-from contextlib import contextmanager
 from dotenv import load_dotenv
 
 # Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("chatapp-v2-api.db")
 
 # Load environment variables
 load_dotenv()
 
 # Database configuration
-DB_TYPE = os.environ.get("DB_TYPE", "sqlite").lower()
-POSTGRES_CONNECTION_STRING = os.environ.get("POSTGRES_CONNECTION_STRING", "")
+DB_TYPE = os.getenv("DB_TYPE").lower()
 SQLITE_DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "chatapp-v2.db")
+SUPABASE_USER = os.getenv("SUPABASE_USER", "")
+SUPABASE_PASSWORD = os.getenv("SUPABASE_PASSWORD", "")
+SUPABASE_HOST = os.getenv("SUPABASE_HOST", "")
+SUPABASE_PORT = os.getenv("SUPABASE_PORT", "5432")
+SUPABASE_DBNAME = os.getenv("SUPABASE_DBNAME", "")
 
 # SQLAlchemy convention for constraint naming
 convention = {
@@ -36,16 +42,38 @@ metadata = MetaData(naming_convention=convention)
 Base = declarative_base(metadata=metadata)
 
 # Create database engine based on configuration
+# Determine which database engine to use
 if DB_TYPE == "postgres":
-    if not POSTGRES_CONNECTION_STRING:
-        logger.warning("POSTGRES_CONNECTION_STRING is not set, defaulting to SQLite")
+    # Validate PostgreSQL connection parameters
+    logger.info(f"PostgreSQL connection parameters: USER={SUPABASE_USER}, HOST={SUPABASE_HOST}, PORT={SUPABASE_PORT}, DB={SUPABASE_DBNAME}")
+    if not all([SUPABASE_USER, SUPABASE_PASSWORD, SUPABASE_HOST, SUPABASE_DBNAME]):
+        logger.warning("Missing required PostgreSQL connection parameters")
+        logger.warning("Defaulting to SQLite")
         DB_TYPE = "sqlite"
-        engine = create_engine(f"sqlite:///{SQLITE_DB_PATH}", connect_args={"check_same_thread": False})
     else:
-        logger.info("Using PostgreSQL database")
-        engine = create_engine(POSTGRES_CONNECTION_STRING, pool_pre_ping=True)
-else:
-    logger.info("Using SQLite database")
+        try:
+            logger.info("Connecting to PostgreSQL database")
+            # Create PostgreSQL connection string with proper URL encoding for special characters
+            db_url = f"postgresql+psycopg2://{urllib.parse.quote_plus(SUPABASE_USER)}:{urllib.parse.quote_plus(SUPABASE_PASSWORD)}@{SUPABASE_HOST}:{SUPABASE_PORT}/{SUPABASE_DBNAME}?sslmode=require"
+            
+            # Create engine with PostgreSQL connection
+            engine = create_engine(db_url, pool_pre_ping=True, echo=True)
+            logger.info("Engine created successfully")
+            
+            # Test the connection
+            with engine.connect() as conn:
+                result = conn.execute(sa.text("SELECT 1")).fetchone()
+                logger.info(f"Connection test result: [OK]")
+                
+            logger.info("PostgreSQL connection established successfully")
+        except Exception as e:
+            logger.info(f"Connection test result: [FAILED]")
+            logger.error(f"Error type: {type(e).__name__}")
+            logger.warning("Defaulting to SQLite")
+            DB_TYPE = "sqlite"
+
+# If we're not using PostgreSQL, use SQLite
+if DB_TYPE != "postgres":
     engine = create_engine(f"sqlite:///{SQLITE_DB_PATH}", connect_args={"check_same_thread": False})
 
 # Create session factory
@@ -103,9 +131,7 @@ def init_db():
     
     This should be called during application startup.
     """
-    # Import all models here to ensure they are registered with the Base
-    from database.models import ConversationModel, MessageModel
-    
     logger.info(f"Initializing database (type: {DB_TYPE})")
+    # Create tables
     Base.metadata.create_all(bind=engine)
     logger.info("Database tables created successfully")

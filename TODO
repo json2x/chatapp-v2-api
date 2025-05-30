@@ -1,0 +1,2 @@
+- Update the connection to supabase to use the postgresql database connection string
+- update the schema manager to use the postgresql database connection string | or the schema manager might not be needed

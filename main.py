@@ -1,10 +1,9 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
-from typing import List, Dict, Any, Optional
-import os
 import logging
 from dotenv import load_dotenv
+import os
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -14,21 +13,7 @@ logger = logging.getLogger("chatapp-v2-api")
 load_dotenv()
 
 # Import database functionality
-from database.database import init_db, get_db
-from database.crud import (
-    create_conversation,
-    add_message,
-    get_conversation,
-    get_all_conversations,
-    delete_conversation,
-    get_messages_by_conversation,
-    get_message_history,
-    update_conversation
-)
-
-# Import LLM service wrapper
-from llm_service_providers.index import llm_service
-from misc.constants import DEFAULT_MODELS, Provider
+from database.database import init_db
 
 # Import routers
 from routes.chat import router as chat_router
@@ -80,5 +65,6 @@ app.include_router(conversations_router, prefix="/api", tags=["conversations"])
 async def root():
     return {"message": "Welcome to ChatApp v2 API"}
 
-
-# Root endpoint remains in main.py
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)

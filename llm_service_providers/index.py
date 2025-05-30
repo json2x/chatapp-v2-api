@@ -5,13 +5,12 @@ This module provides a unified interface for interacting with different LLM serv
 It automatically selects the appropriate provider based on the requested model.
 """
 
-import os
-from typing import Dict, List, Any, Generator, Optional, Union
+from typing import Dict, List, Any, Generator, Optional
 from dotenv import load_dotenv
 
-from .openai import OpenAIChat
-from .anthropic import AnthropicChat
-from misc.constants import Provider, MODEL_PROVIDER_MAP, DEFAULT_MODELS, CONVERSATION_MESSAGES_THRESHOLD
+from llm_service_providers.openai import OpenAIChat
+from llm_service_providers.anthropic import AnthropicChat
+from misc.constants import Provider, MODEL_PROVIDER_MAP, CONVERSATION_MESSAGES_THRESHOLD
 from misc.db import get_conversation
 
 # Load environment variables from .env file
